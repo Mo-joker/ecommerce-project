@@ -36,3 +36,13 @@ npm run dev
 ```sh
 npm run build
 ```
+# Docker 部署指南
+
+## 📋 前提条件
+
+- Docker Desktop for Windows
+- Git
+
+## 🚀 快速开始
+
+### 1. 克隆项目（如果需要）

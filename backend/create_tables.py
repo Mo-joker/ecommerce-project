@@ -3,10 +3,11 @@
 """
 import pymysql
 from pymysql.cursors import DictCursor
+import os
 
-# 数据库配置
+# 数据库配置 - 支持 Docker 和本地环境
 DB_CONFIG = {
-    'host': 'localhost',
+    'host': os.getenv('DB_HOST', 'mysql'),  # Docker 中使用 mysql，本地可使用 localhost
     'user': 'root',
     'password': '123456',
     'database': 'ecommerce',
