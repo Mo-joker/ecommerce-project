@@ -5,7 +5,8 @@ import { ElMessage } from 'element-plus'
 export const useUserStore = defineStore('user', {
   state: () => ({
     token: localStorage.getItem('token') || '',
-    userInfo: null
+    userInfo: null,
+    fetchingUserInfo: false // 添加标记防止重复请求
   }),
 
   actions: {
@@ -37,11 +38,19 @@ export const useUserStore = defineStore('user', {
     },
 
     async getUserInfo() {
+      // 防止重复请求
+      if (this.fetchingUserInfo || !this.token || this.userInfo) {
+        return
+      }
+
+      this.fetchingUserInfo = true
       try {
         const res = await authApi.getCurrentUser()
         this.userInfo = res
       } catch (error) {
         console.error('获取用户信息失败', error)
+      } finally {
+        this.fetchingUserInfo = false
       }
     },
 
@@ -55,6 +64,7 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     isLoggedIn: (state) => !!state.token,
-    userName: (state) => state.userInfo?.username || ''
+    userName: (state) => state.userInfo?.username || '',
+    isAdmin: (state) => state.userInfo?.is_admin || false
   }
 })

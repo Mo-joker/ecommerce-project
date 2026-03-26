@@ -60,8 +60,11 @@ const handleCommand = (command) => {
     router.push('/')
   } else if (command === 'orders') {
     router.push('/orders')
+  } else if (command === 'profile') {
+    router.push('/profile')
   }
 }
+
 </script>
 
 <style scoped>

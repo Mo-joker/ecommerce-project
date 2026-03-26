@@ -20,5 +20,15 @@ export const orderApi = {
   // 更新订单状态
   updateOrderStatus(id, status) {
     return request.put(`/orders/${id}/status`, null, { params: { status } })
+  },
+
+  // 取消订单
+  cancelOrder(id) {
+    return request.put(`/orders/${id}/cancel`)
+  },
+
+  // 支付订单
+  payOrder(id) {
+    return request.put(`/orders/${id}/pay`)
   }
 }

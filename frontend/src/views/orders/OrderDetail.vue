@@ -149,90 +149,13 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
+import { orderApi } from '@/api/order'
 import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
 const loading = ref(false)
 const order = ref(null)
-
-// 模拟订单数据（实际应该从 API 获取）
-const mockOrders = {
-  1: {
-    id: 1,
-    order_number: 'ORD20240101123456',
-    total_amount: 3999.00,
-    status: 'pending',
-    address: {
-      name: '张三',
-      detail: '北京市朝阳区xxx街道xxx号'
-    },
-    phone: '13800000000',
-    items: [
-      {
-        product_id: 1,
-        product_name: '智能手机',
-        price: 3999.00,
-        quantity: 1,
-        total_price: 3999.00,
-        image: 'https://picsum.photos/60/60?random=1'
-      }
-    ],
-    created_at: '2024-01-01 12:34:56'
-  },
-  2: {
-    id: 2,
-    order_number: 'ORD20240102123456',
-    total_amount: 397.00,
-    status: 'paid',
-    address: {
-      name: '李四',
-      detail: '上海市浦东新区xxx路xxx号'
-    },
-    phone: '13900000000',
-    items: [
-      {
-        product_id: 4,
-        product_name: '纯棉T恤',
-        price: 99.00,
-        quantity: 2,
-        total_price: 198.00,
-        image: 'https://picsum.photos/60/60?random=4'
-      },
-      {
-        product_id: 5,
-        product_name: '牛仔裤',
-        price: 199.00,
-        quantity: 1,
-        total_price: 199.00,
-        image: 'https://picsum.photos/60/60?random=5'
-      }
-    ],
-    created_at: '2024-01-02 12:34:56'
-  },
-  3: {
-    id: 3,
-    order_number: 'ORD20240103123456',
-    total_amount: 1299.00,
-    status: 'shipped',
-    address: {
-      name: '王五',
-      detail: '广州市天河区xxx大道xxx号'
-    },
-    phone: '13700000000',
-    items: [
-      {
-        product_id: 6,
-        product_name: '咖啡机',
-        price: 1299.00,
-        quantity: 1,
-        total_price: 1299.00,
-        image: 'https://picsum.photos/60/60?random=6'
-      }
-    ],
-    created_at: '2024-01-03 12:34:56'
-  }
-}
 
 const getStatusType = (status) => {
   const map = {
@@ -266,43 +189,72 @@ const loadOrderDetail = async () => {
 
   loading.value = true
   try {
-    // 模拟 API 请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    if (mockOrders[orderId]) {
-      order.value = mockOrders[orderId]
-    } else {
-      ElMessage.error('订单不存在')
-      router.push('/orders')
-    }
+    // 调用真实 API
+    const data = await orderApi.getOrder(orderId)
+    console.log('订单详情:', data)
+    order.value = data
   } catch (error) {
-    console.error('加载订单详情失败', error)
-    ElMessage.error('加载失败')
+    console.error('加载订单详情失败:', error)
+
+    let errorMsg = '加载失败'
+    if (error.response?.status === 404) {
+      errorMsg = '订单不存在或您无权查看'
+    } else if (error.response?.status === 401) {
+      errorMsg = '请先登录'
+      setTimeout(() => {
+        router.push('/login')
+      }, 1500)
+    }
+
+    ElMessage.error(errorMsg)
+
+    // 延迟返回订单列表页
+    setTimeout(() => {
+      router.push('/orders')
+    }, 2000)
   } finally {
     loading.value = false
   }
 }
 
-const handlePay = () => {
-  ElMessageBox.confirm('确认支付该订单吗？', '提示', {
-    confirmButtonText: '确认支付',
-    cancelButtonText: '取消',
-    type: 'info'
-  }).then(() => {
-    ElMessage.success('支付成功（演示）')
+const handlePay = async () => {
+  try {
+    await ElMessageBox.confirm('确认支付该订单吗？', '提示', {
+      confirmButtonText: '确认支付',
+      cancelButtonText: '取消',
+      type: 'info'
+    })
+
+    await orderApi.payOrder(order.value.id)
+
+    ElMessage.success('支付成功')
     order.value.status = 'paid'
-  }).catch(() => {})
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('支付失败:', error)
+      ElMessage.error('支付失败')
+    }
+  }
 }
 
-const handleCancel = () => {
-  ElMessageBox.confirm('确认取消该订单吗？', '提示', {
-    confirmButtonText: '确认取消',
-    cancelButtonText: '返回',
-    type: 'warning'
-  }).then(() => {
+const handleCancel = async () => {
+  try {
+    await ElMessageBox.confirm('确认取消该订单吗？', '提示', {
+      confirmButtonText: '确认取消',
+      cancelButtonText: '返回',
+      type: 'warning'
+    })
+
+    await orderApi.cancelOrder(order.value.id)
+
     ElMessage.success('订单已取消')
     order.value.status = 'cancelled'
-  }).catch(() => {})
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('取消失败:', error)
+      ElMessage.error('取消失败')
+    }
+  }
 }
 
 const handleTrack = () => {

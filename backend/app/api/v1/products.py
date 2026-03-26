@@ -25,16 +25,27 @@ class ProductResponse(BaseModel):
         from_attributes = True
 
 
-class PaginatedResponse(BaseModel):
-    items: List[ProductResponse]
-    total: int
-    page: int
-    size: int
-    pages: int
+class ProductCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    stock: int
+    category_id: Optional[int] = None
+    image_url: Optional[str] = None
+    is_active: bool = True
 
 
-# backend/app/api/v1/products.py 中的 get_products 函数
-@router.get("/")
+class ProductUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    stock: Optional[int] = None
+    category_id: Optional[int] = None
+    image_url: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+@router.get("")
 async def get_products(
         skip: int = Query(0, ge=0),
         limit: int = Query(12, ge=1, le=100),
@@ -59,10 +70,8 @@ async def get_products(
             Product.name.contains(search) | Product.description.contains(search)
         )
 
-    # 获取总数
     total = query.count()
 
-    # 排序
     if sort == "price_asc":
         query = query.order_by(Product.price.asc())
     elif sort == "price_desc":
@@ -70,16 +79,21 @@ async def get_products(
     else:
         query = query.order_by(Product.id.desc())
 
-    # 分页
     products = query.offset(skip).limit(limit).all()
 
-    # 返回分页格式
     return {
         "items": products,
         "total": total,
         "skip": skip,
         "limit": limit
     }
+
+
+@router.get("/categories")
+async def get_categories(db: Session = Depends(get_db)):
+    """获取所有分类"""
+    categories = db.query(Category).filter(Category.parent_id.is_(None)).all()
+    return categories
 
 
 @router.get("/{product_id}", response_model=ProductResponse)
@@ -91,8 +105,51 @@ async def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 
-@router.get("/categories/")
-async def get_categories(db: Session = Depends(get_db)):
-    """获取所有分类"""
-    categories = db.query(Category).filter(Category.parent_id.is_(None)).all()
-    return categories
+@router.post("", response_model=ProductResponse)
+async def create_product(product_data: ProductCreate, db: Session = Depends(get_db)):
+    """创建新商品（管理员）"""
+    product = Product(
+        name=product_data.name,
+        description=product_data.description,
+        price=product_data.price,
+        stock=product_data.stock,
+        category_id=product_data.category_id,
+        images=[product_data.image_url] if product_data.image_url else None,
+        is_active=product_data.is_active
+    )
+    
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    
+    return product
+
+
+@router.put("/{product_id}", response_model=ProductResponse)
+async def update_product(product_id: int, product_data: ProductUpdate, db: Session = Depends(get_db)):
+    """更新商品信息（管理员）"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    
+    update_data = product_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(product, field, value)
+    
+    db.commit()
+    db.refresh(product)
+    
+    return product
+
+
+@router.delete("/{product_id}")
+async def delete_product(product_id: int, db: Session = Depends(get_db)):
+    """删除商品（管理员）"""
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    
+    db.delete(product)
+    db.commit()
+    
+    return {"message": "商品已删除"}

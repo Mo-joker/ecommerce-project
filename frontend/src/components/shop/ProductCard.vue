@@ -1,7 +1,7 @@
 <template>
   <el-card class="product-card" :body-style="{ padding: '0px' }">
     <div class="product-image">
-      <img :src="product.images?.[0] || 'https://picsum.photos/200/200'" :alt="product.name">
+      <img :src="getImageUrl" :alt="product.name">
     </div>
     <div class="product-info">
       <h3>{{ product.name }}</h3>
@@ -16,9 +16,11 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { ElMessage } from 'element-plus'
+import proiconImage from '@/assets/proicon.png'
 
 const props = defineProps({
   product: {
@@ -29,6 +31,17 @@ const props = defineProps({
 
 const router = useRouter()
 const cartStore = useCartStore()
+
+// 使用固定的本地图片
+const getImageUrl = computed(() => {
+  // 如果商品有自定义图片，优先使用
+  if (props.product.images?.[0]) {
+    return props.product.images[0]
+  }
+
+  // 默认使用 proicon.png
+  return proiconImage
+})
 
 const viewDetail = () => {
   router.push(`/product/${props.product.id}`)
@@ -53,6 +66,7 @@ const addToCart = () => {
 .product-image {
   height: 200px;
   overflow: hidden;
+  background-color: #f0f0f0;
 }
 
 .product-image img {

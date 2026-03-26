@@ -17,7 +17,7 @@
             <h1>{{ product.name }}</h1>
             <p class="description">{{ product.description }}</p>
             <div class="price">¥{{ product.price }}</div>
-            <div class="stock">库存: {{ product.stock }} 件</div>
+            <div class="stock">库存：{{ product.stock }} 件</div>
 
             <div class="quantity">
               <span>数量:</span>
@@ -33,7 +33,8 @@
               <el-button
                 type="primary"
                 size="large"
-                :disabled="product.stock === 0"
+                :disabled="product.stock === 0 || addingToCart"
+                :loading="addingToCart"
                 @click="addToCart"
               >
                 加入购物车
@@ -41,7 +42,8 @@
               <el-button
                 type="success"
                 size="large"
-                :disabled="product.stock === 0"
+                :disabled="product.stock === 0 || addingToCart"
+                :loading="addingToCart"
                 @click="buyNow"
               >
                 立即购买
@@ -67,6 +69,7 @@ const cartStore = useCartStore()
 const loading = ref(false)
 const product = ref(null)
 const quantity = ref(1)
+const addingToCart = ref(false)
 
 const loadProduct = async () => {
   const id = route.params.id
@@ -85,15 +88,46 @@ const loadProduct = async () => {
   }
 }
 
-const addToCart = () => {
-  if (!product.value) return
-  cartStore.addItem(product.value, quantity.value)
-  ElMessage.success('已加入购物车')
+const checkAuth = () => {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    ElMessage.warning({
+      message: '请先登录后再操作',
+      duration: 1500
+    })
+    setTimeout(() => {
+      router.push('/login')
+    }, 1500)
+    return false
+  }
+  return true
 }
 
-const buyNow = () => {
-  addToCart()
-  router.push('/cart')
+const addToCart = async () => {
+  if (!product.value || addingToCart.value) return
+  if (!checkAuth()) return
+
+  addingToCart.value = true
+  try {
+    await cartStore.addItem(product.value, quantity.value)
+  } finally {
+    addingToCart.value = false
+  }
+}
+
+const buyNow = async () => {
+  if (!checkAuth()) return
+
+  addingToCart.value = true
+  try {
+    await cartStore.addItem(product.value, quantity.value)
+    setTimeout(() => {
+      router.push('/cart')
+    }, 1000)
+  } catch (error) {
+    console.error('添加失败:', error)
+    addingToCart.value = false
+  }
 }
 
 onMounted(() => {
