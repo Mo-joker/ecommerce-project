@@ -196,26 +196,7 @@ const payOrder = async (order) => {
   }
 }
 
-// 加载订单统计
-const loadStats = async () => {
-  try {
-    // 获取所有订单
-    const allOrders = await orderApi.getOrders({})
-
-    // 统计各状态订单数
-    stats.value = {
-      total: allOrders.length,
-      pending: allOrders.filter(o => o.status === 'pending').length,
-      paid: allOrders.filter(o => o.status === 'paid').length,
-      shipped: allOrders.filter(o => o.status === 'shipped').length,
-      completed: allOrders.filter(o => o.status === 'completed').length,
-      cancelled: allOrders.filter(o => o.status === 'cancelled').length
-    }
-  } catch (error) {
-    console.error('加载统计失败:', error)
-  }
-}
-
+// 加载订单和统计（合并为一个请求）
 const loadOrders = async () => {
   loading.value = true
   try {
@@ -238,6 +219,11 @@ const loadOrders = async () => {
     }
 
     orders.value = Array.isArray(res) ? res : []
+
+    // 同时更新统计数据（使用所有订单，不受筛选影响）
+    if (!currentStatus.value) {
+      updateStats(res)
+    }
   } catch (error) {
     console.error('加载订单失败:', error)
     ElMessage.error('加载订单失败')
@@ -247,13 +233,35 @@ const loadOrders = async () => {
   }
 }
 
+// 更新统计数据
+const updateStats = (allOrders) => {
+  stats.value = {
+    total: allOrders.length,
+    pending: allOrders.filter(o => o.status === 'pending').length,
+    paid: allOrders.filter(o => o.status === 'paid').length,
+    shipped: allOrders.filter(o => o.status === 'shipped').length,
+    completed: allOrders.filter(o => o.status === 'completed').length,
+    cancelled: allOrders.filter(o => o.status === 'cancelled').length
+  }
+}
+
+// 单独加载统计（只在需要时调用）
+const loadStats = async () => {
+  try {
+    const allOrders = await orderApi.getOrders({})
+    updateStats(allOrders)
+  } catch (error) {
+    console.error('加载统计失败:', error)
+  }
+}
+
 onMounted(() => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
     router.push('/login')
     return
   }
-  loadStats()
+  // 只调用一次 loadOrders，不再调用 loadStats
   loadOrders()
 })
 </script>

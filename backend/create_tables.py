@@ -5,11 +5,11 @@ import pymysql
 from pymysql.cursors import DictCursor
 import os
 
-# 数据库配置 - 支持 Docker 和本地环境
+# 数据库配置 - 从环境变量读取或使用默认值
 DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'mysql'),  # Docker 中使用 mysql，本地可使用 localhost
+    'host': os.getenv('DB_HOST', 'mysql'),
     'user': 'root',
-    'password': '123456',
+    'password': os.getenv('MYSQL_ROOT_PASSWORD', 'YourSecurePassword2026!'),  # 修改为实际密码
     'database': 'ecommerce',
     'charset': 'utf8mb4',
     'cursorclass': DictCursor

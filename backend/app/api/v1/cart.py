@@ -63,7 +63,7 @@ async def get_current_user_from_token(
     return user
 
 
-@router.get("/", response_model=List[CartItemResponse])
+@router.get("", response_model=List[CartItemResponse])
 async def get_cart_items(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token)
@@ -92,7 +92,7 @@ async def get_cart_items(
     return result
 
 
-@router.post("/", response_model=CartItemResponse)
+@router.post("", response_model=CartItemResponse)
 async def add_to_cart(
     item_data: CartItemCreate,
     db: Session = Depends(get_db),
@@ -190,7 +190,7 @@ async def remove_from_cart(
     return {"message": "商品已从购物车移除"}
 
 
-@router.delete("/")
+@router.delete("")
 async def clear_cart(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token)

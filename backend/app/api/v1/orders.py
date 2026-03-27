@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 from jose import jwt, JWTError
+import uuid
 from ...core.database import get_db
 from ...models.orders import Order, OrderItem, OrderStatus
 from ...models.users import User
@@ -76,15 +77,17 @@ async def get_current_user_from_token(
     return user
 
 
-@router.post("/", response_model=OrderResponse)
+@router.post("", response_model=OrderResponse)
 async def create_order(
     order_data: OrderCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user_from_token)
 ):
     """创建订单"""
-    # 生成订单号
-    order_number = f"ORD{datetime.now().strftime('%Y%m%d%H%M%S')}{current_user.id}"
+    # 生成唯一订单号：时间戳 + 随机 UUID 片段
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')[:-3]  # 精确到毫秒
+    random_suffix = str(uuid.uuid4())[:4].replace('-', '')  # 4 位随机数
+    order_number = f"ORD{timestamp}{random_suffix}"
     
     # 创建订单
     order = Order(
@@ -152,7 +155,7 @@ async def create_order(
     }
 
 
-@router.get("/", response_model=List[OrderResponse])
+@router.get("", response_model=List[OrderResponse])
 async def get_orders(
     status: Optional[str] = Query(None, description="订单状态筛选"),
     db: Session = Depends(get_db),

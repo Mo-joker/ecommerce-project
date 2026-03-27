@@ -1,44 +1,53 @@
 
+version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
     container_name: ecommerce-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: YourSecurePassword2026!
       MYSQL_DATABASE: ecommerce
       MYSQL_CHARSET: utf8mb4
     ports:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     command: --default-authentication-plugin=mysql_native_password
     restart: always
+    networks:
+      - ecommerce-network
 
   backend:
-    build: ./backend
+    image: ecommerce-backend:latest
     container_name: ecommerce-backend
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: mysql+pymysql://root:123456@mysql:3306/ecommerce?charset=utf8mb4
-      SECRET_KEY: ecommerce-jwt-secret-key-2026-change-this-in-production
+      DATABASE_URL: mysql+pymysql://root:YourSecurePassword2026!@mysql:3306/ecommerce?charset=utf8mb4
+      SECRET_KEY: your-production-secret-key-change-this-now
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
     depends_on:
       - mysql
-    volumes:
-      - ./backend:/app
     restart: always
+    networks:
+      - ecommerce-network
 
   frontend:
-    build: ./frontend
+    image: ecommerce-frontend:latest
     container_name: ecommerce-frontend
     ports:
       - "80:80"
     depends_on:
       - backend
     restart: always
+    networks:
+      - ecommerce-network
 
 volumes:
   mysql-data:
+
+networks:
+  ecommerce-network:
+    driver: bridge

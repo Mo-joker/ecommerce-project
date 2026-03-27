@@ -35,7 +35,7 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-# 注册路由
+# 注册路由 - 统一使用不带尾部斜杠的路径
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["认证"])
 app.include_router(users_router, prefix="/api/v1/users", tags=["用户"])
 app.include_router(products_router, prefix="/api/v1/products", tags=["商品"])
