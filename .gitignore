@@ -1,9 +1,8 @@
 # 根目录 .gitignore
 
-# ==================== Docker 构建产物（重要）====================
-ecommerce/*.tar
-ecommerce/*.tar.gz
-ecommerce-*.tar
+# ==================== 重要：构建产物（不提交）====================
+/data/ecommerce-builds/
+/data/ecommerce-deploy/
 
 # ==================== Python ====================
 __pycache__/
